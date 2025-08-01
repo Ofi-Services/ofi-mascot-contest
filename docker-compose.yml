@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - mascot_data:/app/backend/data
+      - mascot_uploads:/app/backend/uploads
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - HOST=0.0.0.0
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE}
+      - FRONTEND_URL=${FRONTEND_URL}
+
+volumes:
+  mascot_data:
+    name: mascot-contest-data
+  mascot_uploads:
+    name: mascot-contest-uploads

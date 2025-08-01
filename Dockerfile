@@ -2,6 +2,9 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Create directories for persistent data
+RUN mkdir -p /app/backend/data /app/backend/uploads
+
 # Copy package files
 COPY package*.json ./
 COPY frontend/package*.json ./frontend/
