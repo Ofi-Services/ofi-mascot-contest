@@ -28,7 +28,6 @@ function MascotCard({ mascot, onVote, userVotes }) {
   return (
     <div className="mascot-card">
       <h3>{mascot.name}</h3>
-      <span className="mascot-creator">by {mascot.creator}</span>
       
       {mascot.imageUrl && (
         <div className="mascot-image">
@@ -58,7 +57,6 @@ function AppContent() {
   const [mascots, setMascots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [serverStatus, setServerStatus] = useState('checking');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
   const [userVotes, setUserVotes] = useState([]);
@@ -66,26 +64,13 @@ function AppContent() {
   
   const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
 
-  // Check server health and fetch mascots
+  // Fetch mascots and user votes
   useEffect(() => {
-    checkServerHealth();
     fetchMascots();
     if (isAuthenticated) {
       fetchUserVotes();
     }
   }, [isAuthenticated]);
-
-  const checkServerHealth = async () => {
-    try {
-      const response = await axios.get('/api/health');
-      if (response.data.status === 'OK') {
-        setServerStatus('connected');
-      }
-    } catch (err) {
-      setServerStatus('disconnected');
-      console.error('Server health check failed:', err);
-    }
-  };
 
   const fetchMascots = async () => {
     try {
@@ -145,19 +130,6 @@ function AppContent() {
     setAuthModalOpen(true);
   };
 
-  const StatusIndicator = () => (
-    <div className={`status-indicator ${serverStatus}`}>
-      <div className={`status-dot ${serverStatus}`}></div>
-      <span>
-        Backend Server: {
-          serverStatus === 'connected' ? 'Connected' :
-          serverStatus === 'disconnected' ? 'Disconnected' :
-          'Checking...'
-        }
-      </span>
-    </div>
-  );
-
   if (authLoading) {
     return (
       <div className="container">
@@ -169,7 +141,6 @@ function AppContent() {
   if (loading) {
     return (
       <div className="container">
-        <StatusIndicator />
         <div className="loading">Loading mascots...</div>
       </div>
     );
@@ -178,7 +149,6 @@ function AppContent() {
   if (error) {
     return (
       <div className="container">
-        <StatusIndicator />
         <div className="error">
           <h3>Error</h3>
           <p>{error}</p>
@@ -190,70 +160,78 @@ function AppContent() {
     );
   }
 
-  return (
-    <div className="container">
-      <StatusIndicator />
-      
-      <header className="header">
-        <h1>🏆 OFI Mascot Contest</h1>
-        <p>Submit your mascot and vote for your favorites!</p>
-        
-        <div className="auth-section">
-          {isAuthenticated ? (
-            <div className="user-info">
-              <span>Welcome, {user?.username}!</span>
-              <button onClick={() => setShowUpload(!showUpload)} className="auth-button">
-                {showUpload ? 'Hide Upload' : 'Submit Mascot'}
-              </button>
-              <button onClick={logout} className="auth-button secondary">
-                Logout
-              </button>
+return (
+    <>
+        <header className="header">
+            <div className="header-content">
+                <div className="header-left">
+                    <img src="images/logo.png" alt="OFI Logo" className="header-logo" />
+                    <div className="header-text">
+                        <h1> <span style={{ color: 'var(--primary)' }}>OFI </span>Mascot Contest</h1>
+                        <p>Submit your mascot and vote for your favorites!</p>
+                    </div>
+                </div>
+                
+                <div className="header-right">
+                    {isAuthenticated ? (
+                        <div className="user-info">
+                            <span>Welcome, {user?.username}!</span>
+                            <button onClick={() => setShowUpload(!showUpload)} className="auth-button">
+                                {showUpload ? 'Hide Upload' : 'Submit Mascot'}
+                            </button>
+                            <button onClick={logout} className="auth-button secondary">
+                                Logout
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="auth-buttons">
+                            <button onClick={() => openAuthModal('login')} className="auth-button">
+                                Login
+                            </button>
+                            <button onClick={() => openAuthModal('register')} className="auth-button">
+                                Register
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
-          ) : (
-            <div className="auth-buttons">
-              <button onClick={() => openAuthModal('login')} className="auth-button">
-                Login
-              </button>
-              <button onClick={() => openAuthModal('register')} className="auth-button">
-                Register
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
+        </header>
 
-      {isAuthenticated && showUpload && (
-        <MascotUpload onSuccess={handleMascotUploaded} />
-      )}
+        <div className="container">
 
-      <div className="mascots-section">
-        <h2>Contest Entries ({mascots.length})</h2>
-        
-        {mascots.length === 0 ? (
-          <div className="no-mascots">
-            <p>No mascots submitted yet. Be the first to submit your mascot!</p>
-          </div>
-        ) : (
-          <div className="mascots-grid">
-            {mascots.map(mascot => (
-              <MascotCard
-                key={mascot.id}
-                mascot={mascot}
-                onVote={handleVote}
-                userVotes={userVotes}
-              />
-            ))}
-          </div>
+        {isAuthenticated && showUpload && (
+            <MascotUpload onSuccess={handleMascotUploaded} />
         )}
-      </div>
 
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        mode={authMode}
-      />
-    </div>
-  );
+        <div className="mascots-section">
+            <h2>Contest Entries ({mascots.length})</h2>
+            
+            {mascots.length === 0 ? (
+                <div className="no-mascots">
+                    <p>No mascots submitted yet. Be the first to submit your mascot!</p>
+                </div>
+            ) : (
+                <div className="mascots-grid">
+                    {mascots.map(mascot => (
+                        <MascotCard
+                            key={mascot.id}
+                            mascot={mascot}
+                            onVote={handleVote}
+                            userVotes={userVotes}
+                        />
+                    ))}
+                </div>
+            )}
+        </div>
+
+        <AuthModal
+            isOpen={authModalOpen}
+            onClose={() => setAuthModalOpen(false)}
+            mode={authMode}
+        />
+        </div>
+    </>
+);
 }
 
 function App() {

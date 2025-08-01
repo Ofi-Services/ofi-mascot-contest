@@ -30,17 +30,7 @@ let users = [
   }
 ];
 
-let mascots = [
-  {
-    id: 1,
-    name: 'Fluffy',
-    description: 'A friendly orange cat mascot',
-    imageUrl: null,
-    votes: 42,
-    userId: 1,
-    createdAt: new Date().toISOString()
-  }
-];
+let mascots = [];
 
 let votes = []; // Track user votes to prevent duplicate voting
 
@@ -336,6 +326,23 @@ app.get('/api/user/me', authenticateToken, (req, res) => {
       imageUrl: userMascot.imageUrl ? `${req.protocol}://${req.get('host')}${userMascot.imageUrl}` : null
     } : null
   });
+});
+
+// Admin endpoints to clear databases (for development/testing)
+app.delete('/api/admin/clear/mascots', (req, res) => {
+  mascots.length = 0; // Clear mascots array
+  res.json({ message: 'All mascots cleared successfully' });
+});
+
+app.delete('/api/admin/clear/votes', (req, res) => {
+  votes.length = 0; // Clear votes array
+  res.json({ message: 'All votes cleared successfully' });
+});
+
+app.delete('/api/admin/clear/all', (req, res) => {
+  mascots.length = 0; // Clear mascots array
+  votes.length = 0;   // Clear votes array
+  res.json({ message: 'All mascots and votes cleared successfully' });
 });
 
 // Error handling middleware
