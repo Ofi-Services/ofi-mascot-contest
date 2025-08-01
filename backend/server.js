@@ -13,6 +13,7 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || 'localhost';
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -77,6 +78,19 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve uploaded files
 app.use('/uploads', express.static(uploadsDir));
+
+// Serve static files from React build in production
+if (process.env.NODE_ENV === 'production') {
+  const frontendBuildPath = path.join(__dirname, '../frontend/build');
+  
+  // Check if build directory exists before serving
+  if (fs.existsSync(frontendBuildPath)) {
+    app.use(express.static(frontendBuildPath));
+    console.log(`📁 Serving React build from: ${frontendBuildPath}`);
+  } else {
+    console.warn('⚠️  Frontend build directory not found. Run "npm run build:frontend" first.');
+  }
+}
 
 // JWT middleware
 const authenticateToken = (req, res, next) => {
@@ -372,13 +386,34 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Serve React app for all non-API routes (only in production)
+if (process.env.NODE_ENV === 'production') {
+  const frontendBuildPath = path.join(__dirname, '../frontend/build');
+  app.get('*', (req, res, next) => {
+    // Skip API routes and uploads
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return next();
+    }
+    
+    // Check if build directory exists
+    if (fs.existsSync(frontendBuildPath)) {
+      res.sendFile(path.join(frontendBuildPath, 'index.html'));
+    } else {
+      res.status(503).json({ 
+        error: 'Frontend not built', 
+        message: 'Run "npm run build:frontend" to build the React app first.' 
+      });
+    }
+  });
+}
+
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Backend server is running on http://localhost:${PORT}`);
-  console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Backend server is running on http://${HOST}:${PORT}`);
+  console.log(`📡 API endpoints available at http://${HOST}:${PORT}/api`);
   console.log(`📁 File uploads will be stored in: ${uploadsDir}`);
 });
