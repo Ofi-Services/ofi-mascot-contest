@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../config/api';
 
 const AuthContext = createContext();
 
@@ -14,18 +14,25 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(() => {
+    // Safe localStorage access during build
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token');
+    }
+    return null;
+  });
 
   const logout = useCallback(() => {
-    localStorage.removeItem('token');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+    }
     setToken(null);
     setUser(null);
-    delete axios.defaults.headers.common['Authorization'];
   }, []);
 
   const getCurrentUser = useCallback(async () => {
     try {
-      const response = await axios.get('/api/user/me');
+      const response = await api.get('/api/user/me');
       setUser(response.data);
     } catch (error) {
       console.error('Error getting current user:', error);
@@ -37,22 +44,27 @@ export const AuthProvider = ({ children }) => {
 
   // Set up axios interceptor to include token in requests
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      // Verify token and get user info
-      getCurrentUser();
+    // Only run in browser environment, not during build
+    if (typeof window !== 'undefined') {
+      if (token) {
+        // Verify token and get user info
+        getCurrentUser();
+      } else {
+        setLoading(false);
+      }
     } else {
-      delete axios.defaults.headers.common['Authorization'];
       setLoading(false);
     }
   }, [token, getCurrentUser]);
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('/api/auth/login', { email, password });
+      const response = await api.post('/api/auth/login', { email, password });
       const { token, user } = response.data;
       
-      localStorage.setItem('token', token);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', token);
+      }
       setToken(token);
       setUser(user);
       
@@ -68,14 +80,16 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (username, email, password) => {
     try {
-      const response = await axios.post('/api/auth/register', { 
+      const response = await api.post('/api/auth/register', { 
         username, 
         email, 
         password 
       });
       const { token, user } = response.data;
       
-      localStorage.setItem('token', token);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', token);
+      }
       setToken(token);
       setUser(user);
       

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
+import api from '../config/api';
 
 const MascotUpload = ({ onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -59,7 +59,7 @@ const MascotUpload = ({ onSuccess }) => {
     }
 
     try {
-      const response = await axios.post('/api/mascots', submitData, {
+      const response = await api.post('/api/mascots', submitData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

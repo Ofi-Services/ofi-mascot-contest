@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from './config/api';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AuthModal from './components/AuthModal';
 import MascotUpload from './components/MascotUpload';
@@ -72,7 +72,7 @@ function AppContent() {
   const fetchMascots = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/mascots');
+      const response = await api.get('/api/mascots');
       setMascots(response.data);
       setError(null);
     } catch (err) {
@@ -85,7 +85,7 @@ function AppContent() {
 
   const fetchUserVotes = async () => {
     try {
-      const response = await axios.get('/api/user/votes');
+      const response = await api.get('/api/user/votes');
       setUserVotes(response.data.map(vote => vote.mascotId));
     } catch (err) {
       console.error('Error fetching user votes:', err);
@@ -94,7 +94,7 @@ function AppContent() {
 
   const handleVote = async (mascotId) => {
     try {
-      const response = await axios.post(`/api/mascots/${mascotId}/vote`);
+      const response = await api.post(`/api/mascots/${mascotId}/vote`);
       if (response.data.success) {
         // Update the vote count locally
         setMascots(prevMascots =>
