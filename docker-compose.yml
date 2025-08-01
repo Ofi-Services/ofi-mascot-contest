@@ -1,10 +1,10 @@
 services:
   mascot-contest:
+    container_name: mascot-contest
     build: .
     ports:
       - "5000:5000"
     networks:
-      - nginx-proxy
       - default
     volumes:
       - mascot_data:/app/backend/data
