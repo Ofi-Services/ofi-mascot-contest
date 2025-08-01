@@ -38,9 +38,6 @@ function MascotCard({ mascot, onVote, userVotes }) {
       <p className="mascot-description">{mascot.description}</p>
       
       <div className="vote-section">
-        <div className="vote-count">
-          ❤️ {mascot.votes} votes
-        </div>
         <button
           className={`vote-button ${hasVoted ? 'voted' : ''}`}
           onClick={handleVote}
