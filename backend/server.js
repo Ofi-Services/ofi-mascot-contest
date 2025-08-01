@@ -111,8 +111,24 @@ const upload = multer({
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
+// CORS configuration
+const allowedOrigins = [
+  'http://localhost:3000',                    // desarrollo local
+  'https://mascot.sofiatechnology.ai',        // producción
+  process.env.FRONTEND_URL                    // desde variables de entorno
+].filter(Boolean); // remove undefined values
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function(origin, callback) {
+    // allow requests with no origin (like mobile apps, curl, postman)
+    if(!origin) return callback(null, true);
+    
+    if(allowedOrigins.indexOf(origin) === -1){
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   credentials: true
 }));
 app.use(morgan('combined'));

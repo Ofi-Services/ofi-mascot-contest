@@ -16,7 +16,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
       - MAX_FILE_SIZE=${MAX_FILE_SIZE}
-      - FRONTEND_URL=${FRONTEND_URL}
+      - FRONTEND_URL=https://mascot.sofiatechnology.ai
 
 volumes:
   mascot_data:
