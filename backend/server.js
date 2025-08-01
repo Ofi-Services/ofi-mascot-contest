@@ -127,10 +127,21 @@ app.post('/api/auth/register', [
 
   const { username, email, password } = req.body;
 
+  // Check if email is from @ofiservices.com domain
+  if (!email.endsWith('@ofiservices.com')) {
+    return res.status(400).json({ error: 'Registration is only allowed for @ofiservices.com email addresses' });
+  }
+
   // Check if user already exists
-  const existingUser = users.find(u => u.email === email || u.username === username);
-  if (existingUser) {
-    return res.status(400).json({ error: 'User with this email or username already exists' });
+  const existingUserByEmail = users.find(u => u.email === email);
+  const existingUserByUsername = users.find(u => u.username === username);
+  
+  if (existingUserByEmail) {
+    return res.status(400).json({ error: 'An account with this email address already exists' });
+  }
+  
+  if (existingUserByUsername) {
+    return res.status(400).json({ error: 'This username is already taken' });
   }
 
   try {

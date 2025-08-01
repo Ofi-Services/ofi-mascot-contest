@@ -63,19 +63,24 @@ const AuthModal = ({ isOpen, onClose, mode = 'login' }) => {
         
         <form onSubmit={handleSubmit} className="auth-form">
           {formMode === 'register' && (
-            <div className="form-group">
-              <label htmlFor="username">Username</label>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                required
-                minLength={3}
-                placeholder="Enter your username"
-              />
-            </div>
+            <>
+              <div className="info-message" style={{ marginBottom: '20px', padding: '12px', backgroundColor: 'var(--primary-container)', color: 'var(--on-primary-container)', borderRadius: '5px', fontSize: '0.9rem' }}>
+                <strong>Note:</strong> Registration is only available for OFI Services employees with @ofiservices.com email addresses.
+              </div>
+              <div className="form-group">
+                <label htmlFor="username">Full Name</label>
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  required
+                  minLength={3}
+                  placeholder="Enter your full name"
+                />
+              </div>
+            </>
           )}
           
           <div className="form-group">
@@ -87,7 +92,7 @@ const AuthModal = ({ isOpen, onClose, mode = 'login' }) => {
               value={formData.email}
               onChange={handleChange}
               required
-              placeholder="Enter your email"
+              placeholder={formMode === 'register' ? "your.name@ofiservices.com" : "Enter your email"}
             />
           </div>
           
