@@ -1,0 +1,25 @@
+services:
+  mascot-contest:
+    container_name: mascot-contest
+    build: .
+    ports:
+      - "5000:5000"
+    networks:
+      - default
+    volumes:
+      - mascot_data:/app/backend/data
+      - mascot_uploads:/app/backend/uploads
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - HOST=0.0.0.0
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE}
+      - FRONTEND_URL=https://mascot.sofiatechnology.ai
+
+volumes:
+  mascot_data:
+    name: mascot-contest-data
+  mascot_uploads:
+    name: mascot-contest-uploads

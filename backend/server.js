@@ -15,25 +15,68 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || 'localhost';
 
+// Serve static files from the React frontend app
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// In-memory storage (replace with a real database in production)
-let users = [
-  {
-    id: 1,
-    username: 'demo',
-    email: 'demo@example.com',
-    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' // 'password'
-  }
-];
+// Data persistence setup
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
 
+// Load data from files or initialize with defaults
+let users = [];
 let mascots = [];
+let votes = [];
 
-let votes = []; // Track user votes to prevent duplicate voting
+const DATA_FILES = {
+  users: path.join(dataDir, 'users.json'),
+  mascots: path.join(dataDir, 'mascots.json'),
+  votes: path.join(dataDir, 'votes.json')
+};
+
+// Function to save data to files
+const saveData = (type) => {
+  const data = { users, mascots, votes }[type];
+  fs.writeFileSync(DATA_FILES[type], JSON.stringify(data, null, 2));
+};
+
+// Function to load data from files
+const loadData = () => {
+  try {
+    if (fs.existsSync(DATA_FILES.users)) {
+      users = JSON.parse(fs.readFileSync(DATA_FILES.users));
+    } else {
+      // Initialize with default demo user
+      users = [{
+        id: 1,
+        username: 'demo',
+        email: 'demo@example.com',
+        password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' // 'password'
+      }];
+      saveData('users');
+    }
+
+    if (fs.existsSync(DATA_FILES.mascots)) {
+      mascots = JSON.parse(fs.readFileSync(DATA_FILES.mascots));
+    }
+
+    if (fs.existsSync(DATA_FILES.votes)) {
+      votes = JSON.parse(fs.readFileSync(DATA_FILES.votes));
+    }
+  } catch (error) {
+    console.error('Error loading data:', error);
+  }
+};
+
+// Load data on startup
+loadData();
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -68,8 +111,24 @@ const upload = multer({
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
+// CORS configuration
+const allowedOrigins = [
+  'http://localhost:3000',                    // desarrollo local
+  'https://mascot.sofiatechnology.ai',        // producción
+  process.env.FRONTEND_URL                    // desde variables de entorno
+].filter(Boolean); // remove undefined values
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function(origin, callback) {
+    // allow requests with no origin (like mobile apps, curl, postman)
+    if(!origin) return callback(null, true);
+    
+    if(allowedOrigins.indexOf(origin) === -1){
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   credentials: true
 }));
 app.use(morgan('combined'));
@@ -173,6 +232,7 @@ app.post('/api/auth/register', [
     };
 
     users.push(newUser);
+    saveData('users');
 
     // Generate token
     const token = generateToken(newUser);
@@ -276,6 +336,7 @@ app.post('/api/mascots', authenticateToken, upload.single('image'), [
   };
 
   mascots.push(newMascot);
+  saveData('mascots');
 
   res.status(201).json({
     message: 'Mascot created successfully',
@@ -317,6 +378,8 @@ app.post('/api/mascots/:id/vote', authenticateToken, (req, res) => {
 
   // Update mascot vote count
   mascot.votes += 1;
+  saveData('mascots');
+  saveData('votes');
 
   res.json({ 
     success: true, 
@@ -356,17 +419,21 @@ app.get('/api/user/me', authenticateToken, (req, res) => {
 // Admin endpoints to clear databases (for development/testing)
 app.delete('/api/admin/clear/mascots', (req, res) => {
   mascots.length = 0; // Clear mascots array
+  saveData('mascots');
   res.json({ message: 'All mascots cleared successfully' });
 });
 
 app.delete('/api/admin/clear/votes', (req, res) => {
   votes.length = 0; // Clear votes array
+  saveData('votes');
   res.json({ message: 'All votes cleared successfully' });
 });
 
 app.delete('/api/admin/clear/all', (req, res) => {
   mascots.length = 0; // Clear mascots array
   votes.length = 0;   // Clear votes array
+  saveData('mascots');
+  saveData('votes');
   res.json({ message: 'All mascots and votes cleared successfully' });
 });
 
