@@ -107,6 +107,17 @@ const upload = multer({
   }
 });
 
+// Helper function to get client IP address
+const getClientIP = (req) => {
+  return req.ip || 
+         req.connection?.remoteAddress || 
+         req.socket?.remoteAddress || 
+         (req.connection?.socket ? req.connection.socket.remoteAddress : null) ||
+         req.headers['x-forwarded-for']?.split(',')[0] ||
+         req.headers['x-real-ip'] ||
+         'unknown';
+};
+
 // Middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
@@ -131,6 +142,10 @@ app.use(cors({
   },
   credentials: true
 }));
+
+// Trust proxy for accurate IP addresses
+app.set('trust proxy', true);
+
 app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -222,12 +237,16 @@ app.post('/api/auth/register', [
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
+    // Get client IP address
+    const clientIP = getClientIP(req);
+
     // Create new user
     const newUser = {
       id: users.length + 1,
       username,
       email,
       password: hashedPassword,
+      registrationIP: clientIP,
       createdAt: new Date().toISOString()
     };
 
@@ -325,6 +344,9 @@ app.post('/api/mascots', authenticateToken, upload.single('image'), [
     return res.status(400).json({ error: 'You can only submit one mascot per user' });
   }
 
+  // Get client IP address
+  const clientIP = getClientIP(req);
+
   const newMascot = {
     id: mascots.length + 1,
     name,
@@ -332,6 +354,7 @@ app.post('/api/mascots', authenticateToken, upload.single('image'), [
     imageUrl: req.file ? `/uploads/${req.file.filename}` : null,
     votes: 0,
     userId: req.user.id,
+    submissionIP: clientIP,
     createdAt: new Date().toISOString()
   };
 
@@ -368,11 +391,15 @@ app.post('/api/mascots/:id/vote', authenticateToken, (req, res) => {
     return res.status(400).json({ error: 'You have already voted for this mascot' });
   }
 
+  // Get client IP address
+  const clientIP = getClientIP(req);
+
   // Record the vote
   votes.push({
     id: votes.length + 1,
     userId,
     mascotId,
+    voteIP: clientIP,
     createdAt: new Date().toISOString()
   });
 
@@ -435,6 +462,39 @@ app.delete('/api/admin/clear/all', (req, res) => {
   saveData('mascots');
   saveData('votes');
   res.json({ message: 'All mascots and votes cleared successfully' });
+});
+
+// Admin endpoint to view IP tracking data
+app.get('/api/admin/ip-tracking', (req, res) => {
+  const ipTrackingData = {
+    userRegistrations: users.map(user => ({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      registrationIP: user.registrationIP,
+      createdAt: user.createdAt
+    })),
+    mascotSubmissions: mascots.map(mascot => ({
+      id: mascot.id,
+      name: mascot.name,
+      userId: mascot.userId,
+      submissionIP: mascot.submissionIP,
+      createdAt: mascot.createdAt
+    })),
+    votes: votes.map(vote => ({
+      id: vote.id,
+      userId: vote.userId,
+      mascotId: vote.mascotId,
+      voteIP: vote.voteIP,
+      createdAt: vote.createdAt
+    }))
+  };
+  
+  res.json({
+    message: 'IP tracking data retrieved successfully',
+    timestamp: new Date().toISOString(),
+    data: ipTrackingData
+  });
 });
 
 // Error handling middleware

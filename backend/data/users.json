@@ -1,0 +1,15 @@
+[
+  {
+    "id": 1,
+    "username": "demo",
+    "email": "demo@example.com",
+    "password": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi"
+  },
+  {
+    "id": 2,
+    "username": "GDGDFGDFG",
+    "email": "Stefano.Lacorazza@OFISERVICES.COM",
+    "password": "$2a$10$RDJA.nPJxnbPp1GbpgLrJuHVmqAsRJXix1xinFEb1IGmSBl6wSrwa",
+    "createdAt": "2025-08-04T11:21:17.430Z"
+  }
+]

@@ -5,7 +5,7 @@ import AuthModal from './components/AuthModal';
 import MascotUpload from './components/MascotUpload';
 import './App.css';
 
-function MascotCard({ mascot, onVote, userVotes }) {
+function MascotCard({ mascot, onVote, userVotes, onImageClick }) {
   const [voting, setVoting] = useState(false);
   const { isAuthenticated } = useAuth();
   
@@ -30,8 +30,11 @@ function MascotCard({ mascot, onVote, userVotes }) {
       <h3>{mascot.name}</h3>
       
       {mascot.imageUrl && (
-        <div className="mascot-image">
+        <div className="mascot-image" onClick={() => onImageClick(mascot)}>
           <img src={mascot.imageUrl} alt={mascot.name} />
+          <div className="image-overlay">
+            <span className="zoom-icon">🔍</span>
+          </div>
         </div>
       )}
       
@@ -58,6 +61,8 @@ function AppContent() {
   const [authMode, setAuthMode] = useState('login');
   const [userVotes, setUserVotes] = useState([]);
   const [showUpload, setShowUpload] = useState(false);
+  const [selectedMascot, setSelectedMascot] = useState(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
   
   const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
 
@@ -125,6 +130,16 @@ function AppContent() {
   const openAuthModal = (mode) => {
     setAuthMode(mode);
     setAuthModalOpen(true);
+  };
+
+  const handleImageClick = (mascot) => {
+    setSelectedMascot(mascot);
+    setImageModalOpen(true);
+  };
+
+  const closeImageModal = () => {
+    setImageModalOpen(false);
+    setSelectedMascot(null);
   };
 
   if (authLoading) {
@@ -215,6 +230,7 @@ return (
                             mascot={mascot}
                             onVote={handleVote}
                             userVotes={userVotes}
+                            onImageClick={handleImageClick}
                         />
                     ))}
                 </div>
@@ -226,6 +242,30 @@ return (
             onClose={() => setAuthModalOpen(false)}
             mode={authMode}
         />
+
+        {/* Image Modal */}
+        {imageModalOpen && selectedMascot && (
+            <div className="modal-overlay" onClick={closeImageModal}>
+                <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="image-modal-header">
+                        <h2>{selectedMascot.name}</h2>
+                        <button className="close-button" onClick={closeImageModal}>×</button>
+                    </div>
+                    <div className="image-modal-body">
+                        <img 
+                            src={selectedMascot.imageUrl} 
+                            alt={selectedMascot.name}
+                            className="modal-image"
+                        />
+                        <div className="image-modal-info">
+                            <p className="mascot-creator">Created by: <strong>{selectedMascot.creator}</strong></p>
+                            <p className="mascot-description">{selectedMascot.description}</p>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
         </div>
     </>
 );
