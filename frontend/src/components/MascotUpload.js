@@ -11,6 +11,7 @@ const MascotUpload = ({ onSuccess }) => {
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const { user, refreshUser } = useAuth();
 
   const handleInputChange = (e) => {
@@ -48,8 +49,16 @@ const MascotUpload = ({ onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    
+    // Show confirmation modal instead of submitting directly
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmSubmit = async () => {
     setLoading(true);
     setError('');
+    setShowConfirmModal(false);
 
     const submitData = new FormData();
     submitData.append('name', formData.name);
@@ -86,6 +95,10 @@ const MascotUpload = ({ onSuccess }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCancelSubmit = () => {
+    setShowConfirmModal(false);
   };
 
   if (user?.hasMascot) {
@@ -162,6 +175,57 @@ const MascotUpload = ({ onSuccess }) => {
           {loading ? 'Uploading...' : 'Submit Mascot'}
         </button>
       </form>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="modal-overlay" onClick={handleCancelSubmit}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Confirm Mascot Submission</h2>
+              <button className="close-button" onClick={handleCancelSubmit}>×</button>
+            </div>
+            
+            <div className="confirmation-content">
+              <p><strong>⚠️ Important:</strong> Once submitted, you cannot edit or delete your mascot entry.</p>
+              
+              <div className="mascot-summary">
+                <h3>Review Your Submission:</h3>
+                <div className="summary-item">
+                  <strong>Name:</strong> {formData.name}
+                </div>
+                <div className="summary-item">
+                  <strong>Description:</strong> {formData.description}
+                </div>
+                {imagePreview && (
+                  <div className="summary-item">
+                    <strong>Image:</strong>
+                    <div className="confirmation-image-preview">
+                      <img src={imagePreview} alt="Mascot preview" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="confirmation-actions">
+                <button 
+                  className="cancel-button" 
+                  onClick={handleCancelSubmit}
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="confirm-button" 
+                  onClick={handleConfirmSubmit}
+                  disabled={loading}
+                >
+                  {loading ? 'Submitting...' : 'Yes, Submit Mascot'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

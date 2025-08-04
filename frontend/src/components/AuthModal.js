@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 const AuthModal = ({ isOpen, onClose, mode = 'login' }) => {
@@ -11,6 +11,13 @@ const AuthModal = ({ isOpen, onClose, mode = 'login' }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, register } = useAuth();
+
+  // Update form mode when mode prop changes
+  useEffect(() => {
+    setFormMode(mode);
+    setError('');
+    setFormData({ username: '', email: '', password: '' });
+  }, [mode]);
 
   if (!isOpen) return null;
 

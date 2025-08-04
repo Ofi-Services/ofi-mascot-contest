@@ -142,7 +142,7 @@ app.post('/api/auth/register', [
   const { username, email, password } = req.body;
 
   // Check if email is from @ofiservices.com domain
-  if (!email.endsWith('@ofiservices.com')) {
+  if (!email.toLowerCase().endsWith('@ofiservices.com')) {
     return res.status(400).json({ error: 'Registration is only allowed for @ofiservices.com email addresses' });
   }
 
