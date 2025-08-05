@@ -5,7 +5,7 @@ import AuthModal from './components/AuthModal';
 import MascotUpload from './components/MascotUpload';
 import './App.css';
 
-function MascotCard({ mascot, onVote, userVotes, onImageClick }) {
+function MascotCard({ mascot, onVote, userVotes, onImageClick, onRemoveVote }) {
   const [voting, setVoting] = useState(false);
   const { isAuthenticated } = useAuth();
   
@@ -20,6 +20,20 @@ function MascotCard({ mascot, onVote, userVotes, onImageClick }) {
     setVoting(true);
     try {
       await onVote(mascot.id);
+    } finally {
+      setVoting(false);
+    }
+  };
+
+  const handleRemoveVote = async () => {
+    if (!isAuthenticated) {
+      alert('Please log in to manage votes!');
+      return;
+    }
+    
+    setVoting(true);
+    try {
+      await onRemoveVote(mascot.id);
     } finally {
       setVoting(false);
     }
@@ -41,13 +55,23 @@ function MascotCard({ mascot, onVote, userVotes, onImageClick }) {
       <p className="mascot-description">{mascot.description}</p>
       
       <div className="vote-section">
-        <button
-          className={`vote-button ${hasVoted ? 'voted' : ''}`}
-          onClick={handleVote}
-          disabled={voting || hasVoted || !isAuthenticated}
-        >
-          {voting ? 'Voting...' : hasVoted ? 'Voted ✓' : 'Vote'}
-        </button>
+        {hasVoted ? (
+          <button
+            className="vote-button voted"
+            onClick={handleRemoveVote}
+            disabled={voting || !isAuthenticated}
+          >
+            {voting ? 'Removing...' : '✓ Remove Vote'}
+          </button>
+        ) : (
+          <button
+            className="vote-button"
+            onClick={handleVote}
+            disabled={voting || !isAuthenticated}
+          >
+            {voting ? 'Voting...' : 'Vote'}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -122,6 +146,31 @@ function AppContent() {
     }
   };
 
+  const handleRemoveVote = async (mascotId) => {
+    try {
+      const response = await api.delete(`/api/mascots/${mascotId}/vote`);
+      if (response.data.success) {
+        // Update the vote count locally
+        setMascots(prevMascots =>
+          prevMascots.map(mascot =>
+            mascot.id === mascotId
+              ? { ...mascot, votes: response.data.newVoteCount }
+              : mascot
+          )
+        );
+        // Remove from user votes
+        setUserVotes(prev => prev.filter(voteId => voteId !== mascotId));
+        
+        const mascot = mascots.find(m => m.id === mascotId);
+        alert(`Vote removed for ${mascot?.name}!`);
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || 'Failed to remove vote. Please try again.';
+      alert(errorMsg);
+      console.error('Error removing vote:', err);
+    }
+  };
+
   const handleMascotUploaded = (newMascot) => {
     setMascots(prevMascots => [...prevMascots, newMascot]);
     setShowUpload(false);
@@ -140,6 +189,32 @@ function AppContent() {
   const closeImageModal = () => {
     setImageModalOpen(false);
     setSelectedMascot(null);
+  };
+
+  const handleDeleteMascot = async (mascotId) => {
+    if (!window.confirm('Are you sure you want to delete your mascot? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await api.delete(`/api/mascots/${mascotId}`);
+      if (response.status === 200) {
+        // Remove mascot from local state
+        setMascots(prevMascots => prevMascots.filter(m => m.id !== mascotId));
+        
+        // Remove votes for this mascot from user votes
+        setUserVotes(prevVotes => prevVotes.filter(voteId => voteId !== mascotId));
+        
+        // Close modal
+        closeImageModal();
+        
+        alert(`Mascot "${response.data.deletedMascot}" deleted successfully!`);
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || 'Failed to delete mascot. Please try again.';
+      alert(errorMsg);
+      console.error('Error deleting mascot:', err);
+    }
   };
 
   if (authLoading) {
@@ -229,6 +304,7 @@ return (
                             key={mascot.id}
                             mascot={mascot}
                             onVote={handleVote}
+                            onRemoveVote={handleRemoveVote}
                             userVotes={userVotes}
                             onImageClick={handleImageClick}
                         />
@@ -258,9 +334,21 @@ return (
                             className="modal-image"
                         />
                         <div className="image-modal-info">
-                            <p className="mascot-creator">Created by: <strong>{selectedMascot.creator}</strong></p>
+                            
                             <p className="mascot-description">{selectedMascot.description}</p>
                             
+                            
+                            {/* Delete button for own mascot */}
+                            {isAuthenticated && user && selectedMascot.userId === user.id && (
+                                <div className="mascot-actions">
+                                    <button 
+                                        className="delete-mascot-button"
+                                        onClick={() => handleDeleteMascot(selectedMascot.id)}
+                                    >
+                                        🗑️ Delete My Mascot
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

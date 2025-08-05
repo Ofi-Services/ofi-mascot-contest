@@ -176,17 +176,53 @@ const MascotUpload = ({ onSuccess }) => {
         </button>
       </form>
 
-      {/* Confirmation Modal */}
+      {/* Custom Terms and Conditions Modal */}
       {showConfirmModal && (
         <div className="modal-overlay" onClick={handleCancelSubmit}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Confirm Mascot Submission</h2>
+              <h2>Contest Terms and Conditions</h2>
               <button className="close-button" onClick={handleCancelSubmit}>×</button>
             </div>
             
             <div className="confirmation-content">
-              <p><strong>⚠️ Important:</strong> Once submitted, you cannot edit or delete your mascot entry.</p>
+              <div className="terms-conditions">
+                <h4>Organizer: Ofi Services</h4>
+                <ul>
+                  <li><strong>Participants:</strong> Only active collaborators of Ofi Services</li>
+                </ul>
+                <h4>Proposal Submission:</h4>
+                <ul>
+                  <li>JPG or PNG format (1 file per participant)</li>
+                  <li>Optional GIF to show movement</li>
+                  <li>Videos are not accepted</li>
+                </ul>
+                <h4>Design Requirements:</h4>
+                <ul>
+                  <li>Must be original and unpublished</li>
+                  <li>Should reflect fun, inclusion, and creativity</li>
+                  <li>Must not contain offensive, political, religious, or violent content, nor infringe on copyright</li>
+                </ul>
+                <h4>Intellectual Property:</h4>
+                <ul>
+                  <li>By submitting the proposal, the participant transfers all economic rights of the image to Ofi Services</li>
+                  <li>Ofi Services may use, reproduce, modify, and distribute the design without time, territory, or media limitations</li>
+                  <li>The author waives any future financial claims regarding the use of their design</li>
+                </ul>
+                <h4>Winner Selection:</h4>
+                <ul>
+                  <li>First internal vote: Top 3 selection</li>
+                  <li>Second internal vote: Final winner selection</li>
+                </ul>
+                <h4>Prize:</h4>
+                <ul>
+                  <li>Surprise prize for the winner</li>
+                </ul>
+                <h4>Acceptance:</h4>
+                <ul>
+                  <li>Participation implies full acceptance of these terms and conditions</li>
+                </ul>
+              </div>
               
               <div className="mascot-summary">
                 <h3>Review Your Submission:</h3>

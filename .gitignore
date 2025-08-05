@@ -18,6 +18,11 @@ backend/dist/
 # Uploads directory (user-uploaded images)
 backend/uploads/
 
+# Data files (persistent storage)
+backend/data/users.json
+backend/data/mascots.json
+backend/data/votes.json
+
 # OS generated files
 .DS_Store
 .DS_Store?

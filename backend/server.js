@@ -370,6 +370,57 @@ app.post('/api/mascots', authenticateToken, upload.single('image'), [
   });
 });
 
+// Delete a specific mascot (only by creator or admin)
+app.delete('/api/mascots/:id', authenticateToken, (req, res) => {
+  const mascotId = parseInt(req.params.id);
+  const userId = req.user.id;
+
+  // Find the mascot
+  const mascotIndex = mascots.findIndex(m => m.id === mascotId);
+  if (mascotIndex === -1) {
+    return res.status(404).json({ error: 'Mascot not found' });
+  }
+
+  const mascot = mascots[mascotIndex];
+
+  // Check if user owns this mascot (only creator can delete)
+  if (mascot.userId !== userId) {
+    return res.status(403).json({ error: 'You can only delete your own mascot' });
+  }
+
+  try {
+    // Delete associated image file if it exists
+    if (mascot.imageUrl) {
+      const imagePath = path.join(__dirname, 'uploads', path.basename(mascot.imageUrl));
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+        console.log(`Deleted image file: ${imagePath}`);
+      }
+    }
+
+    // Remove the mascot
+    mascots.splice(mascotIndex, 1);
+    saveData('mascots');
+
+    // Remove all votes for this mascot
+    const initialVotesLength = votes.length;
+    votes = votes.filter(v => v.mascotId !== mascotId);
+    const removedVotesCount = initialVotesLength - votes.length;
+    if (removedVotesCount > 0) {
+      saveData('votes');
+    }
+
+    res.json({ 
+      message: 'Mascot deleted successfully',
+      deletedMascot: mascot.name,
+      removedVotes: removedVotesCount
+    });
+  } catch (error) {
+    console.error('Error deleting mascot:', error);
+    res.status(500).json({ error: 'Failed to delete mascot' });
+  }
+});
+
 app.post('/api/mascots/:id/vote', authenticateToken, (req, res) => {
   const mascotId = parseInt(req.params.id);
   const userId = req.user.id;
@@ -422,6 +473,44 @@ app.get('/api/user/votes', authenticateToken, (req, res) => {
   res.json(userVotes);
 });
 
+// Remove a vote for a specific mascot
+app.delete('/api/mascots/:id/vote', authenticateToken, (req, res) => {
+  const mascotId = parseInt(req.params.id);
+  const userId = req.user.id;
+
+  // Check if mascot exists
+  const mascot = mascots.find(m => m.id === mascotId);
+  if (!mascot) {
+    return res.status(404).json({ error: 'Mascot not found' });
+  }
+
+  // Find the vote
+  const voteIndex = votes.findIndex(v => v.userId === userId && v.mascotId === mascotId);
+  if (voteIndex === -1) {
+    return res.status(404).json({ error: 'Vote not found' });
+  }
+
+  try {
+    // Remove the vote
+    votes.splice(voteIndex, 1);
+    saveData('votes');
+
+    // Update mascot vote count
+    mascot.votes = Math.max(0, mascot.votes - 1);
+    saveData('mascots');
+
+    res.json({ 
+      success: true, 
+      message: `Vote removed for ${mascot.name}`,
+      mascotId,
+      newVoteCount: mascot.votes
+    });
+  } catch (error) {
+    console.error('Error removing vote:', error);
+    res.status(500).json({ error: 'Failed to remove vote' });
+  }
+});
+
 // Get current user info
 app.get('/api/user/me', authenticateToken, (req, res) => {
   const user = users.find(u => u.id === req.user.id);
@@ -441,6 +530,67 @@ app.get('/api/user/me', authenticateToken, (req, res) => {
       imageUrl: userMascot.imageUrl ? `${req.protocol}://${req.get('host')}${userMascot.imageUrl}` : null
     } : null
   });
+});
+
+// Delete user account (only own account)
+app.delete('/api/user/me', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    // Find user index
+    const userIndex = users.findIndex(u => u.id === userId);
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = users[userIndex];
+
+    // Find and delete user's mascot (if any) and its image
+    const userMascot = mascots.find(m => m.userId === userId);
+    if (userMascot) {
+      // Delete associated image file
+      if (userMascot.imageUrl) {
+        const imagePath = path.join(__dirname, 'uploads', path.basename(userMascot.imageUrl));
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+          console.log(`Deleted user's mascot image: ${imagePath}`);
+        }
+      }
+
+      // Remove mascot from array
+      const mascotIndex = mascots.findIndex(m => m.id === userMascot.id);
+      if (mascotIndex !== -1) {
+        mascots.splice(mascotIndex, 1);
+        saveData('mascots');
+      }
+
+      // Remove all votes for user's mascot
+      votes = votes.filter(v => v.mascotId !== userMascot.id);
+    }
+
+    // Remove all votes made by this user
+    const initialVotesLength = votes.length;
+    votes = votes.filter(v => v.userId !== userId);
+    const removedVotesCount = initialVotesLength - votes.length;
+    
+    if (removedVotesCount > 0) {
+      saveData('votes');
+    }
+
+    // Remove user
+    users.splice(userIndex, 1);
+    saveData('users');
+
+    res.json({ 
+      message: 'Account deleted successfully',
+      deletedUser: user.username,
+      deletedMascot: userMascot ? userMascot.name : null,
+      removedVotes: removedVotesCount
+    });
+  } catch (error) {
+    console.error('Error deleting user account:', error);
+    res.status(500).json({ error: 'Failed to delete account' });
+  }
 });
 
 // Admin endpoints to clear databases (for development/testing)
